@@ -29,6 +29,12 @@
     
 
 ---
+## 📸 Screenshots
+
+![Alt text](Images/Screenshot-2)
+
+---
+
 
 ## 🔐 Security & Integration
 
@@ -117,11 +123,6 @@ PRs and forks are very welcome!
 
 ---
 
-## 📸 Screenshots
-
-![Alt text](Images/Screenshot-2)
-
----
 
 ## 🛡 License
 
