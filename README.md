@@ -7,6 +7,10 @@
 
 ---
 
+![Alt text](Images/Screenshot-2)
+
+---
+
 ## ✨ Features
 
 - 🔍 Click-to-select and live-edit any element
@@ -27,11 +31,6 @@
     
 - 🚀 100% Vanilla JS – no dependencies!
     
-
----
-## 📸 Screenshots
-
-![Alt text](Images/Screenshot-2)
 
 ---
 
