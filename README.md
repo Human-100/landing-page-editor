@@ -1,6 +1,6 @@
 
 # Landing Page Editor - By Hanan
-**A powerful, lightweight, single-file based and fully visual landing page editor built in pure JavaScript - no frameworks, no fuss!**
+**A powerful, lightweight, single-file based fully visual landing page editor built in pure JavaScript - no frameworks, no fuss!**
 
 ![License](https://img.shields.io/badge/license-MIT-green)  
 ![Status](https://img.shields.io/badge/status-actively--maintained-brightgreen)
