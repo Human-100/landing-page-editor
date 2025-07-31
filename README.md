@@ -119,7 +119,7 @@ PRs and forks are very welcome!
 
 ## 📸 Screenshots
 
-> _(Add screenshots here if you like, e.g. `preview.png`)_
+![Alt text](Images/Screenshot-2)
 
 ---
 
