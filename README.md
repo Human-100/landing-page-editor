@@ -4,12 +4,12 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green)  
 ![Status](https://img.shields.io/badge/status-actively--maintained-brightgreen)
-
 ---
-## 🔗 Live Demo
- [https://landing-page-editor.netlify.app/](https://landing-page-editor.netlify.app/)
 
-![Alt text](Images/Screenshot-2)
+## 🔗 Live Demo  
+[https://landing-page-editor.netlify.app/](https://landing-page-editor.netlify.app/)
+
+![Editor Preview](Images/Screenshot-2.png)
 
 ---
 
