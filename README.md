@@ -9,7 +9,7 @@
 ## 🔗 Live Demo  
 [https://landing-page-editor.netlify.app/](https://landing-page-editor.netlify.app/)
 
-![Editor Preview](Images/Screenshot-2.png)
+![Editor Preview](Images/Screenshot-2)
 
 ---
 
