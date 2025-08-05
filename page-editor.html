@@ -273,6 +273,863 @@
                     <input type="color" id="textColor" class="color-picker" onchange="updateSelectedElement()">
                     <label>Background Color:</label>
                     <input type="color" id="backgroundColor" class="color-picker" onchange="updateSelectedElement()">
+                    <label>Background:</label>
+                    <input type="text" id="background" class="text-input" placeholder="CSS background property..." onchange="updateSelectedElement()">
+                    <label>Font Size:</label>
+                    <input type="range" id="fontSize" class="range-input" min="8" max="72" value="16" onchange="updateSelectedElement()">
+                    <span id="fontSizeValue">16px</span>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>Actions</h3>
+                    <button class="element-button" onclick="deleteSelectedElement()">🗑️ Delete Element</button>
+                    <button class="element-button" onclick="duplicateSelectedElement()">📋 Duplicate Element</button>
+                    <button class="element-button" onclick="moveElementUp()">⬆️ Move Up</button>
+                    <button class="element-button" onclick="moveElementDown()">⬇️ Move Down</button>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>Add Elements</h3>
+                    <button class="element-button" onclick="addElement('div')">📦 Container (div)</button>
+                    <button class="element-button" onclick="addElement('section')">📄 Section</button>
+                    <button class="element-button" onclick="addElement('h1')">📝 Heading 1</button>
+                    <button class="element-button" onclick="addElement('h2')">📝 Heading 2</button>
+                    <button class="element-button" onclick="addElement('h3')">📝 Heading 3</button>
+                    <button class="element-button" onclick="addElement('p')">📄 Paragraph</button>
+                    <button class="element-button" onclick="addElement('span')">🔤 Text Span</button>
+                    <button class="element-button" onclick="addElement('a')">🔗 Link</button>
+                    <button class="element-button" onclick="addElement('button')">🔘 Button</button>
+                    <button class="element-button" onclick="addElement('img')">🖼️ Image</button>
+                    <button class="element-button" onclick="addElement('ul')">📋 List</button>
+                    <button class="element-button" onclick="addElement('nav')">🧭 Navigation</button>
+                    <button class="element-button" onclick="addElement('header')">📋 Header</button>
+                    <button class="element-button" onclick="addElement('footer')">📋 Footer</button>
+                </div>
+            </div>
+            
+            <div class="editor-area">
+                <iframe id="editorFrame" class="editor-frame"></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <span>Loading editor...</span>
+    </div>
+    
+    <input type="file" id="fileInput" class="file-input" accept=".html" onchange="handleFileSelect(event)">
+
+    <script>
+        let currentHTML = '';
+        let currentFilename = '';
+        let selectedElement = null;
+        let editorDocument = null;
+        let editorWindow = null;
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Initialize editor
+        function initEditor() {
+            try {
+                console.log('Initializing Visual Editor...');
+                
+                // Create a blank HTML document in the iframe
+                const iframe = document.getElementById('editorFrame');
+                editorWindow = iframe.contentWindow;
+                editorDocument = iframe.contentDocument;
+                
+                // Set up the editor document
+                editorDocument.open();
+                editorDocument.write(`
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Editor</title>
+                        <style>
+                            body { 
+                                margin: 0; 
+                                padding: 20px; 
+                                font-family: Arial, sans-serif; 
+                                min-height: 100vh;
+                            }
+                            * { cursor: pointer; }
+                        </style>
+                    </head>
+                    <body>
+                        <div style="text-align: center; padding: 50px;">
+                            <h1>Hi There My Name is Hanan</h1>
+                            <p>Welcome to My Editor!</p>
+                        </div>
+                    </body>
+                    </html>
+                `);
+                editorDocument.close();
+                
+                // Set up click handlers for element selection
+                editorDocument.addEventListener('click', handleElementClick);
+                
+                document.getElementById('loading').style.display = 'none';
+                showNotification('Visual editor loaded successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error initializing editor:', error);
+                document.getElementById('loading').style.display = 'none';
+                alert('Failed to initialize editor: ' + error.message);
+            }
+        }
+        
+        // Handle element clicks for selection
+        function handleElementClick(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Remove previous selection
+            if (selectedElement) {
+                selectedElement.classList.remove('element-selected');
+            }
+            
+            // Select new element
+            selectedElement = event.target;
+            selectedElement.classList.add('element-selected');
+            
+            // Update sidebar with element properties
+            updateSidebar();
+        }
+        
+        // Update sidebar with selected element properties
+        function updateSidebar() {
+            if (!selectedElement) return;
+            
+            document.getElementById('textContent').value = selectedElement.textContent || '';
+            document.getElementById('elementClass').value = selectedElement.className || '';
+            document.getElementById('elementId').value = selectedElement.id || '';
+            document.getElementById('elementHref').value = selectedElement.href || '';
+            document.getElementById('elementSrc').value = selectedElement.src || '';
+            document.getElementById('elementAlt').value = selectedElement.alt || '';
+            
+            // Get computed styles
+            const styles = window.getComputedStyle(selectedElement);
+            
+            // Prioritize inline styles over computed styles for colors
+            const inlineTextColor = selectedElement.style.color;
+            const inlineBgColor = selectedElement.style.backgroundColor;
+            
+            document.getElementById('textColor').value = inlineTextColor || rgbToHex(styles.color);
+            document.getElementById('backgroundColor').value = inlineBgColor || rgbToHex(styles.backgroundColor);
+            
+
+            
+            // Get the background property, prioritizing inline styles over computed styles
+            const inlineBackground = selectedElement.style.background;
+            const computedBackground = styles.background;
+            document.getElementById('background').value = inlineBackground || computedBackground || '';
+            
+            // Prioritize inline font-size over computed font-size
+            const inlineFontSize = selectedElement.style.fontSize;
+            const computedFontSize = parseInt(styles.fontSize);
+            const fontSize = inlineFontSize ? parseInt(inlineFontSize) : computedFontSize;
+            
+            document.getElementById('fontSize').value = fontSize;
+            document.getElementById('fontSizeValue').textContent = fontSize + 'px';
+        }
+        
+        // Convert RGB to Hex
+        function rgbToHex(rgb) {
+            if (rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '#ffffff';
+            const rgbMatch = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (!rgbMatch) return '#000000';
+            const r = parseInt(rgbMatch[1]);
+            const g = parseInt(rgbMatch[2]);
+            const b = parseInt(rgbMatch[3]);
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+        
+        // Update selected element with sidebar values
+        function updateSelectedElement() {
+            if (!selectedElement) return;
+            
+            const textContent = document.getElementById('textContent').value;
+            const href = document.getElementById('elementHref').value;
+            const src = document.getElementById('elementSrc').value;
+            const alt = document.getElementById('elementAlt').value;
+            const textColor = document.getElementById('textColor').value;
+            const backgroundColor = document.getElementById('backgroundColor').value;
+            const background = document.getElementById('background').value;
+            const fontSize = document.getElementById('fontSize').value + 'px';
+            
+            // Update element properties
+            if (textContent !== selectedElement.textContent) {
+                selectedElement.textContent = textContent;
+            }
+            
+            if (selectedElement.tagName === 'A' && href !== selectedElement.href) {
+                selectedElement.href = href;
+            }
+            
+            if (selectedElement.tagName === 'IMG') {
+                if (src !== selectedElement.src) selectedElement.src = src;
+                if (alt !== selectedElement.alt) selectedElement.alt = alt;
+            }
+            
+            // Update styles - only change the specific property that was modified
+            const changedProperties = [];
+            
+            // Check which properties have changed and only update those
+            if (textColor && textColor !== selectedElement.style.color) {
+                selectedElement.style.setProperty('color', textColor, 'important');
+                changedProperties.push('color');
+            }
+            
+            if (backgroundColor && backgroundColor !== selectedElement.style.backgroundColor) {
+                selectedElement.style.setProperty('background-color', backgroundColor, 'important');
+                changedProperties.push('background-color');
+            }
+            
+            if (background) {
+                const currentBg = selectedElement.style.background;
+                if (currentBg !== background) {
+                    selectedElement.style.setProperty('background', background, 'important');
+                    changedProperties.push('background');
+                }
+            } else if (background === '' && selectedElement.style.background) {
+                // Clear background if field is empty
+                selectedElement.style.removeProperty('background');
+                changedProperties.push('background');
+            }
+            
+            if (fontSize && fontSize !== selectedElement.style.fontSize) {
+                selectedElement.style.setProperty('font-size', fontSize, 'important');
+                changedProperties.push('font-size');
+            }
+            
+            // Log what was changed for debugging
+            if (changedProperties.length > 0) {
+                console.log('Updated properties:', changedProperties);
+            }
+        }
+        
+        // Add new element
+        function addElement(tagName) {
+            const element = editorDocument.createElement(tagName);
+            
+            // Set default content based on tag
+            switch (tagName) {
+                case 'h1':
+                case 'h2':
+                case 'h3':
+                    element.textContent = 'New Heading';
+                    break;
+                case 'p':
+                    element.textContent = 'New paragraph text';
+                    break;
+                case 'a':
+                    element.textContent = 'New Link';
+                    element.href = '#';
+                    break;
+                case 'button':
+                    element.textContent = 'New Button';
+                    break;
+                case 'img':
+                    element.src = 'https://via.placeholder.com/300x200';
+                    element.alt = 'New Image';
+                    break;
+                case 'ul':
+                    element.innerHTML = '<li>List item 1</li><li>List item 2</li>';
+                    break;
+                case 'div':
+                case 'section':
+                case 'span':
+                case 'nav':
+                case 'header':
+                case 'footer':
+                    element.textContent = 'New ' + tagName;
+                    break;
+            }
+            
+            // Add to body
+            editorDocument.body.appendChild(element);
+            
+            // Select the new element
+            selectedElement = element;
+            element.classList.add('element-selected');
+            updateSidebar();
+            
+            showNotification(`Added new ${tagName} element`, 'success');
+        }
+        
+        // Delete selected element
+        function deleteSelectedElement() {
+            if (!selectedElement || selectedElement === editorDocument.body) return;
+            
+            selectedElement.remove();
+            selectedElement = null;
+            updateSidebar();
+            showNotification('Element deleted', 'success');
+        }
+        
+        // Duplicate selected element
+        function duplicateSelectedElement() {
+            if (!selectedElement) return;
+            
+            const clone = selectedElement.cloneNode(true);
+            selectedElement.parentNode.insertBefore(clone, selectedElement.nextSibling);
+            
+            selectedElement = clone;
+            clone.classList.add('element-selected');
+            updateSidebar();
+            
+            showNotification('Element duplicated', 'success');
+        }
+        
+        // Move element up
+        function moveElementUp() {
+            if (!selectedElement || !selectedElement.previousElementSibling) return;
+            
+            selectedElement.parentNode.insertBefore(selectedElement, selectedElement.previousElementSibling);
+            showNotification('Element moved up', 'success');
+        }
+        
+        // Move element down
+        function moveElementDown() {
+            if (!selectedElement || !selectedElement.nextElementSibling) return;
+            
+            selectedElement.parentNode.insertBefore(selectedElement.nextElementSibling, selectedElement);
+            showNotification('Element moved down', 'success');
+        }
+        
+        // Load HTML from file input
+        function loadHTML() {
+            document.getElementById('fileInput').click();
+        }
+        
+        // Handle file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const html = e.target.result;
+                    currentHTML = html;
+                    currentFilename = file.name;
+                    
+                    loadHTMLIntoEditor(html);
+                    
+                    showNotification(`Loaded ${file.name} successfully!`, 'success');
+                };
+                reader.readAsText(file);
+            }
+        }
+        
+
+        
+        // Load HTML into editor
+        function loadHTMLIntoEditor(html) {
+            try {
+                // Extract body content
+                const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                const bodyContent = bodyMatch ? bodyMatch[1] : html;
+                
+                // Extract CSS
+                const cssMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+                const css = cssMatch ? cssMatch[1] : '';
+                
+                // Update editor document
+                editorDocument.open();
+                editorDocument.write(`
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Editor</title>
+                        <style>
+                            ${css}
+                            * { cursor: pointer; }
+                            *:hover { outline: 1px dashed #007bff; }
+                        </style>
+                    </head>
+                    <body>
+                        ${bodyContent}
+                    </body>
+                    </html>
+                `);
+                editorDocument.close();
+                
+                // Re-attach event listeners
+                editorDocument.addEventListener('click', handleElementClick);
+                
+            } catch (error) {
+                console.error('Error loading HTML into editor:', error);
+                showNotification('Failed to load HTML into editor', 'error');
+            }
+        }
+        
+        // Save HTML
+        function saveHTML() {
+            try {
+                const html = editorDocument.documentElement.outerHTML;
+                
+                fetch('/api/save-html', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        html: html,
+                        css: currentHTML.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '',
+                        filename: currentFilename || `edited-${Date.now()}.html`
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('HTML saved successfully!', 'success');
+                        currentFilename = data.filename;
+                    } else {
+                        showNotification('Failed to save HTML', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving HTML:', error);
+                    showNotification('Failed to save HTML', 'error');
+                });
+                
+            } catch (error) {
+                console.error('Error getting editor HTML:', error);
+                showNotification('Failed to get editor HTML', 'error');
+            }
+        }
+        
+        // Preview HTML
+        function previewHTML() {
+            try {
+                const html = editorDocument.documentElement.outerHTML;
+                const css = currentHTML.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
+                
+                const fullHTML = '<!DOCTYPE html>' +
+                    '<html lang="en">' +
+                    '<head>' +
+                    '<meta charset="UTF-8">' +
+                    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+                    '<title>Preview - PageCrafter</title>' +
+                    '<style>' + css + '</style>' +
+                    '</head>' +
+                    '<body>' + html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] || '' + '</body>' +
+                    '</html>';
+                
+                const newWindow = window.open('', '_blank');
+                newWindow.document.write(fullHTML);
+                newWindow.document.close();
+                
+                showNotification('Preview opened in new window!', 'info');
+                
+            } catch (error) {
+                console.error('Error creating preview:', error);
+                showNotification('Failed to create preview', 'error');
+            }
+        }
+        
+        // Export HTML
+        function exportHTML() {
+            try {
+                const html = editorDocument.documentElement.outerHTML;
+                const css = currentHTML.match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1] || '';
+                
+                const fullHTML = '<!DOCTYPE html>' +
+                    '<html lang="en">' +
+                    '<head>' +
+                    '<meta charset="UTF-8">' +
+                    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+                    '<title>Exported Page - PageCrafter</title>' +
+                    '<style>' + css + '</style>' +
+                    '</head>' +
+                    '<body>' + html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] || '' + '</body>' +
+                    '</html>';
+                
+                const blob = new Blob([fullHTML], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentFilename || 'exported-page.html';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showNotification('HTML exported successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error exporting HTML:', error);
+                showNotification('Failed to export HTML', 'error');
+            }
+        }
+        
+        // Close editor
+        function closeEditor() {
+            if (confirm('Are you sure you want to close the editor? Any unsaved changes will be lost.')) {
+                window.close();
+            }
+        }
+        
+        // Initialize editor when page loads
+        window.addEventListener('load', function() {
+            console.log('Page loaded, initializing Visual Editor...');
+            
+            setTimeout(() => {
+                initEditor();
+                
+                // Check for URL parameters to load specific file or blob
+                const urlParams = new URLSearchParams(window.location.search);
+                const fileParam = urlParams.get('file');
+                
+                if (fileParam) {
+                    setTimeout(() => {
+                        // Check if it's a blob URL
+                        if (fileParam.startsWith('blob:')) {
+                            loadHTMLFromBlob(fileParam);
+                        } else {
+                            loadSpecificFile(fileParam);
+                        }
+                    }, 1000);
+                }
+            }, 500);
+        });
+        
+        // Load specific file by name
+        function loadSpecificFile(filename) {
+            fetch(`/${filename}`)
+                .then(response => response.text())
+                .then(html => {
+                    currentHTML = html;
+                    currentFilename = filename;
+                    
+                    loadHTMLIntoEditor(html);
+                    
+                    showNotification(`${filename} loaded successfully!`, 'success');
+                })
+                .catch(error => {
+                    console.error('Error loading file:', error);
+                    showNotification(`Failed to load ${filename}`, 'error');
+                });
+        }
+
+        // Load HTML from blob URL
+        function loadHTMLFromBlob(blobUrl) {
+            fetch(blobUrl)
+                .then(response => response.text())
+                .then(html => {
+                    currentHTML = html;
+                    currentFilename = 'generated-landing-page.html';
+                    
+                    loadHTMLIntoEditor(html);
+                    
+                    showNotification('Generated landing page loaded successfully!', 'success');
+                })
+                .catch(error => {
+                    console.error('Error loading blob HTML:', error);
+                    showNotification('Failed to load generated HTML from blob. You can manually load the HTML file.', 'error');
+                    
+                    // Show a helpful message to the user
+                    setTimeout(() => {
+                        showNotification('💡 Tip: Use "Load HTML" button to manually load your generated page', 'info');
+                    }, 2000);
+                });
+        }
+    </script>
+</body>
+</html> <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Editor - By Hanan</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .editor-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .toolbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .toolbar h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .toolbar-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            border-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background: #f39c12;
+            border-color: #f39c12;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            border-color: #e74c3c;
+        }
+        
+        .editor-main {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .editor-area {
+            flex: 1;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .editor-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: #27ae60;
+        }
+        
+        .notification.error {
+            background: #e74c3c;
+        }
+        
+        .notification.info {
+            background: #3498db;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .sidebar-section h3 {
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .element-button {
+            display: block;
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 0.25rem;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+        
+        .element-button:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .color-picker {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        
+        .text-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            font-family: inherit;
+        }
+        
+        .text-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+        
+        textarea.text-input {
+            line-height: 1.4;
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .range-input {
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+        
+
+        
+        .element-highlight {
+            outline: 2px solid #007bff !important;
+            outline-offset: 2px;
+        }
+        
+        .element-selected {
+            outline: 2px solid #28a745 !important;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <div class="toolbar">
+            <h1>🎨 Page Editor - By Hanan</h1>
+            <div class="toolbar-buttons">
+                <button class="btn" onclick="loadHTML()">📁 Load HTML</button>
+                <button class="btn btn-success" onclick="saveHTML()">💾 Save</button>
+                <button class="btn btn-warning" onclick="previewHTML()">👁️ Preview</button>
+                <button class="btn" onclick="exportHTML()">📤 Export</button>
+                <button class="btn btn-danger" onclick="closeEditor()">❌ Close</button>
+            </div>
+        </div>
+        
+        <div class="editor-main">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Edit Selected Element</h3>
+                    <textarea id="textContent" class="text-input" placeholder="Text content..." onchange="updateSelectedElement()" rows="8" style="resize: vertical; min-height: 160px;"></textarea>
+                    <input type="text" id="elementClass" class="text-input" placeholder="CSS class..." readonly style="background-color: #f8f9fa; color: #6c757d; cursor: not-allowed;">
+                    <input type="text" id="elementId" class="text-input" placeholder="Element ID..." readonly style="background-color: #f8f9fa; color: #6c757d; cursor: not-allowed;">
+                    <input type="text" id="elementHref" class="text-input" placeholder="Link URL..." onchange="updateSelectedElement()">
+                    <input type="text" id="elementSrc" class="text-input" placeholder="Image URL..." onchange="updateSelectedElement()">
+                    <input type="text" id="elementAlt" class="text-input" placeholder="Image alt text..." onchange="updateSelectedElement()">
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>Styling</h3>
+                    <label>Text Color:</label>
+                    <input type="color" id="textColor" class="color-picker" onchange="updateSelectedElement()">
+                    <label>Background Color:</label>
+                    <input type="color" id="backgroundColor" class="color-picker" onchange="updateSelectedElement()">
                     <label>Font Size:</label>
                     <input type="range" id="fontSize" class="range-input" min="8" max="72" value="16" onchange="updateSelectedElement()">
                     <span id="fontSizeValue">16px</span>
